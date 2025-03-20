@@ -35,9 +35,8 @@ print("X_train shape:", X_train.shape)
 print("y_train shape:", y_train.shape)
 print("X_test shape:", X_test.shape)
 
-# Set up preprocessing for categorical features
-categorical_features = ['Sex', 'Embarked', 'Cabin']
-numerical_features = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
+categorical_features = ['Sex', 'Embarked', 'Cabin', 'Name', 'Ticket']
+numerical_features = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'PassengerId']
 
 # Create preprocessor
 preprocessor = ColumnTransformer(
