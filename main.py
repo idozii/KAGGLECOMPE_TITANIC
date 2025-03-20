@@ -7,12 +7,11 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.ensemble import RandomForestClassifier  # Changed from Regressor to Classifier
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import accuracy_score, classification_report  # Changed metrics
+from sklearn.metrics import accuracy_score, classification_report  
 
 train_data = pd.read_csv('data/train.csv')
 test_data = pd.read_csv('data/test.csv')
 
-# Handle missing values (as you've already done)
 train_data['Age'] = train_data['Age'].fillna(train_data['Age'].median())
 train_data['Cabin'] = train_data['Cabin'].fillna('X')
 train_data['Embarked'] = train_data['Embarked'].fillna(train_data['Embarked'].mode()[0])
