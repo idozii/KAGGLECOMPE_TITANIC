@@ -12,8 +12,8 @@ from sklearn.metrics import accuracy_score, classification_report
 train_data = pd.read_csv('data/train.csv')
 test_data = pd.read_csv('data/test.csv')
 
-print(train_data.isnull().sum())
-print(test_data.isnull().sum())
+print(train_data.info())
+print(test_data.info())
 
 train_data['Age'] = train_data['Age'].fillna(train_data['Age'].median())
 train_data['Cabin'] = train_data['Cabin'].fillna('X')
@@ -23,7 +23,7 @@ test_data['Age'] = test_data['Age'].fillna(test_data['Age'].median())
 test_data['Fare'] = test_data['Fare'].fillna(test_data['Fare'].median())
 test_data['Cabin'] = test_data['Cabin'].fillna('X')
 
-features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'Cabin']
+features = train_data.columns.drop(['Survived'])
 
 X_train = train_data[features]
 y_train = train_data['Survived']
