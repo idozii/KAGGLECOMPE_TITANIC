@@ -30,31 +30,29 @@ y_train = train_data['Survived']
 
 X_test = test_data[features]
 
-# Check feature data
-print("X_train shape:", X_train.shape)
-print("y_train shape:", y_train.shape)
-print("X_test shape:", X_test.shape)
+# categorical_features = ['Sex', 'Embarked', 'Cabin', 'Name', 'Ticket']
+# numerical_features = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'PassengerId']
 
-categorical_features = ['Sex', 'Embarked', 'Cabin', 'Name', 'Ticket']
-numerical_features = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare', 'PassengerId']
+# preprocessor = ColumnTransformer(
+#     transformers=[
+#         ('num', SimpleImputer(strategy='median'), numerical_features),
+#         ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
+#     ])
 
-# Create preprocessor
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', SimpleImputer(strategy='median'), numerical_features),
-        ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_features)
-    ])
+# model = Pipeline(steps=[
+#     ('preprocessor', preprocessor),
+#     ('classifier', RandomForestClassifier(n_estimators=100, random_state=42))
+# ])
 
-# Create and train model pipeline
-model = Pipeline(steps=[
-    ('preprocessor', preprocessor),
-    ('classifier', RandomForestClassifier(n_estimators=100, random_state=42))
-])
+combined = pd.concat([X_train, X_test])
+combined_dummies = pd.get_dummies(combined)
 
-# Train model
+# Split back into train and test
+X_train = combined_dummies.iloc[:len(X_train)]
+X_test = combined_dummies.iloc[len(X_train):]
+
+model = RandomForestClassifier(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
-
-# Make predictions
 predictions = model.predict(X_test)
 
 X_train_split, X_val, y_train_split, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
