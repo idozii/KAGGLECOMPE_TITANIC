@@ -12,12 +12,12 @@ print(test_data.info())
 
 def preprocess_data(train_data, test_data):
     train_data['Age'] = train_data['Age'].fillna(train_data['Age'].median())
-    train_data['Cabin'] = train_data['Cabin'].fillna('X')
-    train_data['Embarked'] = train_data['Embarked'].fillna(train_data['Embarked'].mode()[0])
+    train_data['Cabin'] = train_data['Cabin'].fillna('Unknown')
+    train_data['Embarked'] = train_data['Embarked'].fillna('S')
 
     test_data['Age'] = test_data['Age'].fillna(test_data['Age'].median())
     test_data['Fare'] = test_data['Fare'].fillna(test_data['Fare'].median())
-    test_data['Cabin'] = test_data['Cabin'].fillna('X')
+    test_data['Cabin'] = test_data['Cabin'].fillna('Unknown')
 
     features = train_data.columns.drop(['Survived', 'Name', 'Ticket'])
 
