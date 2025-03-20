@@ -61,18 +61,15 @@ model.fit(X_train, y_train)
 # Make predictions
 predictions = model.predict(X_test)
 
-# For validation (if splitting train data)
-# X_train_split, X_val, y_train_split, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-# model.fit(X_train_split, y_train_split)
-# val_predictions = model.predict(X_val)
-# print("Validation accuracy:", accuracy_score(y_val, val_predictions))
-# print(classification_report(y_val, val_predictions))
+X_train_split, X_val, y_train_split, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+model.fit(X_train_split, y_train_split)
+val_predictions = model.predict(X_val)
+print("Validation accuracy:", accuracy_score(y_val, val_predictions))
+print(classification_report(y_val, val_predictions))
 
-# Create submission file
 submission = pd.DataFrame({
     'PassengerId': test_data['PassengerId'],
     'Survived': predictions.astype(int)
 })
 
 submission.to_csv('submission.csv', index=False)
-print("Submission file created!")
