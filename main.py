@@ -46,9 +46,5 @@ val_predictions = model.predict(X_val)
 print("Validation accuracy:", accuracy_score(y_val, val_predictions))
 print(classification_report(y_val, val_predictions))
 
-submission = pd.DataFrame({
-    'PassengerId': test_data['PassengerId'],
-    'Survived': predictions.astype(int)
-})
-
+submission = pd.DataFrame({'PassengerId': test_data['PassengerId'], 'Survived': predictions})
 submission.to_csv('submission.csv', index=False)
