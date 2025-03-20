@@ -12,6 +12,9 @@ from sklearn.metrics import accuracy_score, classification_report
 train_data = pd.read_csv('data/train.csv')
 test_data = pd.read_csv('data/test.csv')
 
+print(train_data.isnull().sum())
+print(test_data.isnull().sum())
+
 train_data['Age'] = train_data['Age'].fillna(train_data['Age'].median())
 train_data['Cabin'] = train_data['Cabin'].fillna('X')
 train_data['Embarked'] = train_data['Embarked'].fillna(train_data['Embarked'].mode()[0])
@@ -20,14 +23,8 @@ test_data['Age'] = test_data['Age'].fillna(test_data['Age'].median())
 test_data['Fare'] = test_data['Fare'].fillna(test_data['Fare'].median())
 test_data['Cabin'] = test_data['Cabin'].fillna('X')
 
-# Feature engineering (extract cabin type)
-train_data['CabinType'] = train_data['Cabin'].str[0]
-test_data['CabinType'] = test_data['Cabin'].str[0]
+features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'Cabin']
 
-# Select features for model
-features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Embarked', 'CabinType']
-
-# Create X (features) and y (target)
 X_train = train_data[features]
 y_train = train_data['Survived']
 
@@ -39,7 +36,7 @@ print("y_train shape:", y_train.shape)
 print("X_test shape:", X_test.shape)
 
 # Set up preprocessing for categorical features
-categorical_features = ['Sex', 'Embarked', 'CabinType']
+categorical_features = ['Sex', 'Embarked', 'Cabin']
 numerical_features = ['Pclass', 'Age', 'SibSp', 'Parch', 'Fare']
 
 # Create preprocessor
