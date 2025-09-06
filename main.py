@@ -1,50 +1,112 @@
 import pandas as pd
-import numpy as np 
-from sklearn.model_selection import train_test_split 
-from sklearn.ensemble import RandomForestClassifier 
-from sklearn.metrics import accuracy_score, classification_report  
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split, GridSearchCV
+from xgboost import XGBClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.losses import BinaryCrossentropy
+from tensorflow.keras.optimizers import Adam
+import plotly.express as px
+from sklearn.decomposition import PCA
 
-train_data = pd.read_csv('data/train.csv')
-test_data = pd.read_csv('data/test.csv')
-
+train_data = pd.read_csv("data/train.csv")
+test_data = pd.read_csv("data/test.csv")
+test_data_copied = test_data.copy()
+print(train_data.head())
 print(train_data.info())
-print(test_data.info())
+print(train_data.isnull().sum())
 
-def preprocess_data(train_data, test_data):
-    train_data['Age'] = train_data['Age'].fillna(train_data['Age'].median())
-    train_data['Cabin'] = train_data['Cabin'].fillna('Unknown')
-    train_data['Embarked'] = train_data['Embarked'].fillna('S')
+columns_to_drop = ["PassengerId"]
+train_data = train_data.drop(columns=columns_to_drop)
+test_data_copied = test_data_copied.drop(columns=columns_to_drop)
 
-    test_data['Age'] = test_data['Age'].fillna(test_data['Age'].median())
-    test_data['Fare'] = test_data['Fare'].fillna(test_data['Fare'].median())
-    test_data['Cabin'] = test_data['Cabin'].fillna('Unknown')
+X = train_data.drop("Survived", axis=1)
+y = train_data["Survived"]
 
-    features = train_data.columns.drop(['Survived', 'Name', 'Ticket'])
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
 
-    X_train = train_data[features]
-    y_train = train_data['Survived']
+numeric_features = ["Pclass", "Age", "SibSp", "Parch", "Fare"]
+cat_features = ["Name", "Sex", "Ticket", "Cabin", "Embarked"]
 
-    X_test = test_data[features]
+numeric_pipeline = Pipeline(
+    steps=[
+        ("imputer", KNNImputer(n_neighbors=3)),
+        ("scaler", StandardScaler()),
+    ]
+)
+cat_pipeline = Pipeline(
+    steps=[
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("onehot", OneHotEncoder(handle_unknown="ignore")),
+    ]
+)
 
-    combined = pd.concat([X_train, X_test])
-    combined_dummies = pd.get_dummies(combined, columns=['Sex', 'Embarked', 'Cabin'])
+transformers = ColumnTransformer(
+    transformers=[
+        ("num", numeric_pipeline, numeric_features),
+        ("cat", cat_pipeline, cat_features),
+    ]
+)
 
-    X_train = combined_dummies.iloc[:len(X_train)]
-    X_test = combined_dummies.iloc[len(X_train):]
+transformed_X_train = transformers.fit_transform(X_train)
+transformed_X_test = transformers.transform(X_test)
+transformed_test_data = transformers.transform(test_data_copied)
 
-    return X_train, y_train, X_test
+rf_model = RandomForestClassifier(random_state=42)
+xgb_model = XGBClassifier(random_state=42)
+nn_model = Sequential(
+    [
+        Dense(64, activation="relu", input_shape=(transformed_X_train.shape[1],)),
+        Dropout(0.5),
+        Dense(32, activation="relu"),
+        Dropout(0.5),
+        Dense(1, activation="linear"),
+    ]
+)
+nn_model.compile(Adam(learning_rate=0.001), loss=BinaryCrossentropy(from_logits=True))
 
-X_train, y_train, X_test = preprocess_data(train_data, test_data)
+rf_grid_search = GridSearchCV(rf_model, param_grid={"n_estimators": [100, 200]}, cv=3)
+xgb_grid_search = GridSearchCV(xgb_model, param_grid={"n_estimators": [100, 200]}, cv=3)
 
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
-predictions = model.predict(X_test)
+nn_model.fit(transformed_X_train, y_train, epochs=100, batch_size=32, verbose=1)
+rf_grid_search.fit(transformed_X_train, y_train)
+xgb_grid_search.fit(transformed_X_train, y_train)
 
-X_train_split, X_val, y_train_split, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
-model.fit(X_train_split, y_train_split)
-val_predictions = model.predict(X_val)
-print("Validation accuracy:", accuracy_score(y_val, val_predictions))
-print(classification_report(y_val, val_predictions))
+nn_predictions = nn_model.predict(transformed_X_test)
+nn_predictions = tf.sigmoid(nn_predictions).numpy()
+nn_predictions_final = (nn_predictions > 0.5).astype(int)
+rf_best_model = rf_grid_search.best_estimator_
+rf_predictions = rf_best_model.predict(transformed_X_test)
+rf_predictions = (rf_predictions > 0.5).astype(int)
+xgb_best_model = xgb_grid_search.best_estimator_
+xgb_predictions = xgb_best_model.predict(transformed_X_test)
+xgb_predictions = (xgb_predictions > 0.5).astype(int)
 
-submission = pd.DataFrame({'PassengerId': test_data['PassengerId'], 'Survived': predictions})
-submission.to_csv('submission.csv', index=False)
+print(f"NN Accuracy: {classification_report(y_test, nn_predictions_final)}")
+print(f"RF Accuracy: {classification_report(y_test, rf_predictions)}")
+print(f"XGB Accuracy: {classification_report(y_test, xgb_predictions)}")
+
+predictions = nn_model.predict(transformed_test_data)
+predictions = tf.sigmoid(predictions).numpy()
+predictions = (predictions > 0.5).astype(int)
+submission = pd.DataFrame(
+    {
+        "PassengerId": test_data["PassengerId"],
+        "Survived": predictions.flatten(),
+    }
+)
+submission.to_csv("data/submission.csv", index=False)
+
+pca = PCA(n_components=3)
+X_pca = pca.fit_transform(transformed_X_train.toarray())
+df_pca = pd.DataFrame(X_pca, columns=["PC1", "PC2", "PC3"])
+fig = px.scatter_3d(df_pca, x="PC1", y="PC2", z="PC3", color=y_train.astype(str))
+fig.show()
